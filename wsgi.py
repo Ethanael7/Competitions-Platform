@@ -1,4 +1,5 @@
 import click, pytest, sys
+from datetime import datetime
 from flask import Flask
 from flask.cli import with_appcontext, AppGroup
 
@@ -7,7 +8,7 @@ from App.models import User
 from App.models import Competition
 from App.main import create_app
 from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize )
-
+from App.controllers import competitioncontroller 
 
 # This commands file allow you to create convenient CLI commands for testing controllers
 
@@ -23,6 +24,14 @@ def init():
 '''
 User Commands
 '''
+
+@app.cli.command("create-competition", help = "creates a competition")
+@click.argument('name', default ='Javalin')
+@click.argument('date',default=str(datetime.now().date()))
+def create_competition(name,date):
+    competitioncontroller.create_competition(name,date)
+    print(f"Competion {name} created successfully.")
+
 
 # Commands can be organized using groups
 
