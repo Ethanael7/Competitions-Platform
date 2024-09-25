@@ -29,9 +29,25 @@ User Commands
 @click.argument('name', default ='Javalin')
 @click.argument('date',default=str(datetime.now().date()))
 def create_competition(name,date):
-    competitioncontroller.create_competition(name,date)
-    print(f"Competion {name} created successfully.")
-
+    existing_competition = Competition.query.filter_by(name=name).first()
+    
+    if existing_competition:
+        print(f'Competition "{name} already exists!')
+        return
+    
+    new_competition = Competition(name=name,date=date)
+    
+    db.session.add(new_competition)
+    db.session.commit()
+    
+    print(f'Competition "{name}" created successfully!')
+    
+    
+@app.cli.command("view-competitions", help = "lists the competitions")
+def view_competitions():
+    competitions = competitioncontroller.view_competitions()
+    for competition in competitions:
+        print(f"Name: {competition['name']}Date: {competition['date']}, Participants: {', '.join(competition['participants'])}")
 
 # Commands can be organized using groups
 
