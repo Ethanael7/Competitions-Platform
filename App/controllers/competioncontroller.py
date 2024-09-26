@@ -5,11 +5,6 @@ class CompetitionController:
     def __init__(self):
         self.competitions = []
 
-    def create_competition(self, name,date):
-        competition = Competition(name,date)
-        self.competitions.append(competition)
-
- 
     def view_competitions(self):
         return [comp.get_competition_info() for comp in self.competitions]
     
