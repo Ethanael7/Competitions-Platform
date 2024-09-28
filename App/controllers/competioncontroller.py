@@ -1,17 +1,8 @@
 
-from App.models import Competition, Result, Participant
+from App.models import Competition, Result, User, Participant
 from App.database import db
 from datetime import datetime
-
-def create_participant(name):
-    participant = Participant.query.filter_by(name=name).first()
-    if participant:
-        return participant
-    else:
-        new_participant = Participant(name=name)
-        db.session.add(new_participant)
-        db.session.commit()
-        return new_participant
+import csv
     
 def create_competition(name, date):
     
@@ -33,23 +24,62 @@ def get_competition_results(competition_id):
     else:
         return None
     
-def import_results(file_path, competition_id):
-    comp = Competition.query.get(competition_id)
-    if not comp:
-        raise Exception(f"Competition {competition_id} not found")  # Corrected to use an f-string
-    
-    import csv
-    with open(file_path, newline='') as csvfile:
-        reader = csv.DictReader(csvfile)
-        
-        # Reading each row from the CSV
-        for row in reader:
-            # Assume the CSV columns are 'name', 'score'
-            participant_name = row['name']
-            participant = create_participant(participant_name)
-            result = Result(competition_id=competition_id, participant_id=participant.id, score=row['score'])
-            db.session.add(result)
+
+
+def import_competitions_and_results(competition_file, results_file):
+    try:
+        # Import competitions
+        with open(competition_file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+            
+                competition_name = row['name']
+                competition_date_str = row['date']  # Date as string from CSV
+                try:
+                    # Convert the string to a datetime object
+                    competition_date = datetime.strptime(competition_date_str, '%Y-%m-%d')
+                except ValueError:
+                    print(f"Error parsing date {competition_date_str} for competition {competition_name}")
+                    continue
+                
+                # Create or fetch the competition
+                competition = Competition.query.filter_by(name=competition_name).first()
+                if not competition:
+                    competition = Competition(name=competition_name, date=competition_date)
+                    db.session.add(competition)
+                    db.session.commit()
+
+        # Import results
+        with open(results_file, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            for row in reader:
+                
+                participant_name = row['participant_name']
+                score = row['score']
+                competition_id = row['competition_id']
+                
+                competition = Competition.query.get(competition_id)
+                if not competition:
+                    print(f"Competition with ID {competition_id} not found!")
+                    continue
+                
+                participant = User.query.filter_by(username=participant_name).first()
+                if participant:
+                    result = Result(user_id=participant.id, competition_id=competition.id, score=score)
+                    db.session.add(result)
+
         db.session.commit()
+        print("Competitions and results imported successfully.")
+
+    except FileNotFoundError as e:
+        print(f"File not found: {e.filename}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
+  
+        
+
+    
    
         
         

@@ -14,7 +14,7 @@ from App.controllers import (
     create_competition,   
     get_competition,
     get_competition_results,
-    import_results
+    import_competitions_and_results
 )
 
 # This commands file allow you to create convenient CLI commands for testing controllers
@@ -34,7 +34,7 @@ User Commands
 
 competition_cli = AppGroup('competition', help='Competition commands')
 
-@app.cli.command("create-competition")
+@app.cli.command("create-competition", help = 'Creates a Competition')
 @click.argument('name')
 @click.argument('date')
 def create_competition_cli(name, date):
@@ -54,27 +54,24 @@ def view_competitions_cli():
 @click.argument("competition_id")
 @with_appcontext
 def view_results_cli(competition_id):
-    """CLI command to view results for a specific competition."""
     results = get_competition_results(competition_id)
     if results:
         for result in results:
-            click.echo(f"{result.participant.name} ({result.participant.email}) - {result.score}")
+            click.echo(f"Participant:{result.participant.name},Score: {result.score}")
     else:
         click.echo(f"No results found for competition with ID {competition_id}")
 
-@app.cli.command("import-results")
-@click.argument("file_path")
-@click.argument("competition_id")
-@with_appcontext
-def import_results_cli(file_path, competition_id):
-    """CLI command to import results from a CSV file for a specific competition."""
+@app.cli.command("import-competitions", help="Import competitions and results from CSV files")
+@click.argument('competition-file', default='competitions.csv')
+@click.argument('results_file', default='results.csv')
+def import_competitions(competition_file, results_file):
+    """CLI command to import competitions and results from specified CSV files."""
     try:
-        import_results(file_path, competition_id)
-        click.echo(f"Results imported successfully from {file_path}")
+        import_competitions_and_results(competition_file, results_file)
+        print("Data import completed successfully.")
     except Exception as e:
-        click.echo(str(e)) 
-
-
+        print(f"An error occurred during import: {e}")
+        
 
 
 
