@@ -9,7 +9,7 @@ class Competition(db.Model):
     results = db.relationship('Result', backref='competition', lazy=True)
     
     def __repr__(self):
-        return f"Competition('{self.name}', '{self.date}')"
+        return f'<Competition {self.name} on {self.date}>'
     
 
 class Participant(db.Model):

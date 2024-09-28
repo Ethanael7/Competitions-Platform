@@ -4,11 +4,18 @@ from flask import Flask
 from flask.cli import with_appcontext, AppGroup
 
 from App.database import db, get_migrate
-from App.models import User
-from App.models import Competition
+from App.models import User, competition
 from App.main import create_app
-from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize )
-from App.controllers import ( create_competition,create_participant, import_results, get_competition, get_competition_results)
+from App.controllers import (
+    create_user, 
+    get_all_users_json, 
+    get_all_users, 
+    initialize, 
+    create_competition,   
+    get_competition,
+    get_competition_results,
+    import_results
+)
 
 # This commands file allow you to create convenient CLI commands for testing controllers
 
@@ -25,7 +32,7 @@ def init():
 User Commands
 '''
 
-user_cli = AppGroup('user', help='User object commands')
+competition_cli = AppGroup('competition', help='Competition commands')
 
 @app.cli.command("create-competition")
 @click.argument('name')
@@ -67,7 +74,6 @@ def import_results_cli(file_path, competition_id):
     except Exception as e:
         click.echo(str(e)) 
 
-        commit
 
 
 
