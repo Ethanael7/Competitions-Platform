@@ -8,7 +8,7 @@ from App.models import User
 from App.models import Competition
 from App.main import create_app
 from App.controllers import ( create_user, get_all_users_json, get_all_users, initialize )
-from App.controllers import competitioncontroller 
+from App.controllers import ( create_competition,create_participant, import_results, get_competition, get_competition_results)
 
 # This commands file allow you to create convenient CLI commands for testing controllers
 
@@ -25,69 +25,52 @@ def init():
 User Commands
 '''
 
-@app.cli.command("create-competition", help = "creates a competition")
-@click.argument('name', default ='Javalin')
-@click.argument('date',default=str(datetime.now().date()))
-def create_competition(name,date):
-    existing_competition = Competition.query.filter_by(name=name).first()
-    
-    if existing_competition:
-        print(f'Competition "{name} already exists!')
-        return
-    
-    new_competition = Competition(name=name,date=date)
-    
-    db.session.add(new_competition)
-    db.session.commit()
-    
-    print(f'Competition "{name}" created successfully!')
+user_cli = AppGroup('user', help='User object commands')
 
-@app.cli.command("import_results", help="Import Competition Results")
-@click.argument('file_path')
-def import_results(file_path):
+@app.cli.command("create-competition")
+@click.argument('name')
+@click.argument('date')
+def create_competition_cli(name, date):
+    competition = create_competition(name, date)
+    click.echo(f'Competition created: {competition}')
+
+@app.cli.command("view-competitions")
+def view_competitions_cli():
+    competitions = get_competition()
+    if competitions:
+        for competition in competitions:
+            click.echo(f"ID: {competition.id}, Name: {competition.name}, Date: {competition.date}")
+    else:
+        click.echo("No competitions found")
+
+@app.cli.command("view-results")
+@click.argument("competition_id")
+@with_appcontext
+def view_results_cli(competition_id):
+    """CLI command to view results for a specific competition."""
+    results = get_competition_results(competition_id)
+    if results:
+        for result in results:
+            click.echo(f"{result.participant.name} ({result.participant.email}) - {result.score}")
+    else:
+        click.echo(f"No results found for competition with ID {competition_id}")
+
+@app.cli.command("import-results")
+@click.argument("file_path")
+@click.argument("competition_id")
+@with_appcontext
+def import_results_cli(file_path, competition_id):
+    """CLI command to import results from a CSV file for a specific competition."""
     try:
-        with open(file_path, newline='') as csvfile:
-            reader = csv.DictReader(csvfile)
-            
-            # Reading each row from the CSV
-            for row in reader:
-                # Assume the CSV columns are 'name', 'date', 'participants'
-                competition_name = row['name']
-                competition_date = row['date']
-                participants = row['participants'].split(',')  # Participants are comma-separated
-                
-                # Fetch existing competition or create a new one
-                competition = Competition.query.filter_by(name=competition_name).first()
-                if not competition:
-                    competition = Competition(name=competition_name, date=competition_date)
-                    db.session.add(competition)
-                    db.session.commit()
-                
-                # Add participants to competition, assuming 'participants' refer to users
-                for participant_name in participants:
-                    participant = User.query.filter_by(username=participant_name).first()
-                    if participant and participant not in competition.participants:
-                        competition.participants.append(participant)
-
-            # Commit all changes after importing
-            db.session.commit()
-            print(f"Results imported successfully from {file_path}.")
-
-    # Handle file not found error
-    except FileNotFoundError:
-        print(f"File {file_path} not found.")
-    
-    # Catch and print any other errors
+        import_results(file_path, competition_id)
+        click.echo(f"Results imported successfully from {file_path}")
     except Exception as e:
-        print(f"An error occurred: {e}")
+        click.echo(str(e)) 
 
-    
-    
-@app.cli.command("view-competitions", help = "lists the competitions")
-def view_competitions():
-    competitions = competitioncontroller.view_competitions()
-    for competition in competitions:
-        print(f"Name: {competition['name']}Date: {competition['date']}, Participants: {', '.join(competition['participants'])}")
+        commit
+
+
+
 
 # Commands can be organized using groups
 

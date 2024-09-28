@@ -1,26 +1,50 @@
-import csv
-from models import Competition
 
-class CompetitionController:
-    def __init__(self):
-        self.competitions = []
+from models import Competition, Result, Participant
+from App.database import db
 
-    def view_competitions(self):
-        return [comp.get_competition_info() for comp in self.competitions]
+def create_participant(name):
+    participant = Participant.query.filter_by(name=name).first()
+    if participant:
+        return participant
+    else:
+        new_participant = Participant(name=name)
+        db.session.add(new_participant)
+        db.session.commit()
+        return new_participant
     
-    def view_competition_results(self, competition_name):
-        competition = self.get_competition_by_name(competition_name)
-        if competition:
-            return competition.get_competition_info()
-        return f"No competition named {competition_name}"
+def create_competition(name, date):
+    competition = Competition.query.filter_by(name=name).first()
+    db.session.add(competition)
+    db.session.commit()
+    return competition
+
+def get_competition():
+    return Competition.query.all()
+
+def get_competition_results(competition_id):
+    competition = Competition.query.get(competition_id)
+    if competition:
+        return Result.query.filter_by(competition_id=competition_id).all()
+    else:
+        return None
     
-    def get_competition_name(self, name):
-        for competition in self.competitions:
-            if competition.name == name:
-                return competition
-            return None
+def import_results(file_path, competition_id):
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        raise Exception("Competition {competition_id} not found")
+    
+    import csv
+    with open(file_path, newline='') as csvfile:
+        reader = csv.DictReader(csvfile)
         
-
+        # Reading each row from the CSV
+        for row in reader:
+            # Assume the CSV columns are 'name', 'date', 'participants'
+            participant_name = row['name']
+            participant = create_participant(row['participant_name'])
+            result = Result(competition_id=competition_id, participant_id=participant.id, score=row['score'])
+            db.session.add(result)
+        db.session.commit()
    
         
         

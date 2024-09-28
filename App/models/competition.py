@@ -6,18 +6,27 @@ class Competition(db.Model):
     name = db.Column(db.String, nullable=False, unique=True)
     date = db.Column(db.DateTime, default=datetime.now)
     participants = db.relationship('Participant', backref='competition', lazy=True)
+    results = db.relationship('Result', backref='competition', lazy=True)
+    
+    def __repr__(self):
+        return f"Competition('{self.name}', '{self.date}')"
+    
 
-    def __init__(self, name, date, participants=None):
-        self.name = name
-        self.date = datetime.fromisoformat(date)
-        self.participants = participants or []
-
-    def add_participant(self, participant_name):
-        self.participants.append(participant_name)
-
-    def get_competition_info(self):
-        return {
-            'name': self.name,
-            'date': self.date.strftime("%d-%m-%Y"),
-            'participants': self.participants
-        }
+class Participant(db.Model):
+    id = db.Column(db.Integer, primary_key=True)   
+    name = db.Column(db.String, nullable=False)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competition.id'), nullable=False)
+    
+    results = db.relationship('Result', backref='participant', lazy=True)
+    
+    def __repr__(self):
+        return f"Participant('{self.name}')"
+    
+class Result(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    score = db.Column(db.Integer, nullable=False)
+    participant_id = db.Column(db.Integer, db.ForeignKey('participant.id'), nullable=False)
+    competition_id = db.Column(db.Integer, db.ForeignKey('competition.id'), nullable=False)
+    
+    def __repr__(self):
+        return f'<Result {self.participant_name} - {self.score}>'
