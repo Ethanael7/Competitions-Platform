@@ -41,6 +41,46 @@ def create_competition(name,date):
     db.session.commit()
     
     print(f'Competition "{name}" created successfully!')
+
+@app.cli.command("import_results", help="Import Competition Results")
+@click.argument('file_path')
+def import_results(file_path):
+    try:
+        with open(file_path, newline='') as csvfile:
+            reader = csv.DictReader(csvfile)
+            
+            # Reading each row from the CSV
+            for row in reader:
+                # Assume the CSV columns are 'name', 'date', 'participants'
+                competition_name = row['name']
+                competition_date = row['date']
+                participants = row['participants'].split(',')  # Participants are comma-separated
+                
+                # Fetch existing competition or create a new one
+                competition = Competition.query.filter_by(name=competition_name).first()
+                if not competition:
+                    competition = Competition(name=competition_name, date=competition_date)
+                    db.session.add(competition)
+                    db.session.commit()
+                
+                # Add participants to competition, assuming 'participants' refer to users
+                for participant_name in participants:
+                    participant = User.query.filter_by(username=participant_name).first()
+                    if participant and participant not in competition.participants:
+                        competition.participants.append(participant)
+
+            # Commit all changes after importing
+            db.session.commit()
+            print(f"Results imported successfully from {file_path}.")
+
+    # Handle file not found error
+    except FileNotFoundError:
+        print(f"File {file_path} not found.")
+    
+    # Catch and print any other errors
+    except Exception as e:
+        print(f"An error occurred: {e}")
+
     
     
 @app.cli.command("view-competitions", help = "lists the competitions")
