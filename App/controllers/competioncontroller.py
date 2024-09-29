@@ -24,8 +24,6 @@ def get_competition_results(competition_id):
     else:
         return None
     
-
-
 def import_competitions_and_results(competition_file, results_file):
     try:
         # Import competitions

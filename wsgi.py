@@ -52,7 +52,6 @@ def view_competitions_cli():
 
 @app.cli.command("view-results")
 @click.argument("competition_id")
-@with_appcontext
 def view_results_cli(competition_id):
     results = get_competition_results(competition_id)
     if results:

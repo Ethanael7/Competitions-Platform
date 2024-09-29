@@ -27,6 +27,9 @@ class Result(db.Model):
     score = db.Column(db.Integer, nullable=False)
     participant_id = db.Column(db.Integer, db.ForeignKey('participant.id'), nullable=False)
     competition_id = db.Column(db.Integer, db.ForeignKey('competition.id'), nullable=False)
+                               
+    participant = db.relationship('Participant', backref='results')  
+    competition = db.relationship('Competition', backref='results', lazy=True)
     
     def __repr__(self):
         return f'<Result {self.participant_name} - {self.score}>'
