@@ -29,6 +29,4 @@ class Result(db.Model):
     competition_id = db.Column(db.Integer, db.ForeignKey('competition.id'), nullable=False)
                                
     def __repr__(self):
-        participant = Participant.query.get(self.participant_id)
-        participant_name = participant.name if participant else "Unknown"
-        return f'<Result {participant_name} - {self.score}>'
+        return f'<Result {self.participant_name} - {self.score}>'

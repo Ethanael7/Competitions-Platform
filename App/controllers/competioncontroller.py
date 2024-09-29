@@ -17,7 +17,30 @@ def create_competition(name, date):
 def get_competition():
     return Competition.query.all()
 
-# controllers/competition_controller.py
+
+def update_competition(competition_id, new_name, new_date):
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        return f'Competition with ID {competition_id} not found!', None
+
+    competition.name = new_name
+    try:
+        competition.date = datetime.strptime(new_date, "%Y-%m-%d").date()
+    except ValueError:
+        return f'Invalid date format: {new_date}. Please use YYYY-MM-DD.', None
+
+    db.session.commit()
+    return None, competition
+
+def delete_competition(competition_id):
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        return f'Competition with ID {competition_id} not found!', None
+
+    db.session.delete(competition)
+    db.session.commit()
+    return None, f'Competition with ID {competition_id} deleted.'
+
 
 def get_results(competition_id):
     competition = Competition.query.get(competition_id)
@@ -84,7 +107,7 @@ def import_results(results_file):
                 
                 participant = User.query.filter_by(username=participant_name).first()  # Assuming User model exists
                 if participant:
-                    result = Result(user_id=participant.id, competition_id=competition.id, score=score)
+                    result = Result(user_id=participant.id, competition_id=Competition.id, score=score)
                     db.session.add(result)
                     db.session.commit()
                     
@@ -94,6 +117,9 @@ def import_results(results_file):
         print(f"File not found: {e.filename}")
     except Exception as e:
         print(f"An error occurred: {e}")
+        
+
+
 
   
         
