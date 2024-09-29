@@ -17,25 +17,38 @@ def create_competition(name, date):
 def get_competition():
     return Competition.query.all()
 
-def get_competition_results(competition_id):
-    comp = Competition.query.get(competition_id)
-    if comp:
-        return Result.query.filter_by(competition_id=competition_id).all()
-    else:
-        return None
+# controllers/competition_controller.py
+
+def get_results(competition_id):
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        return f"No competition found with ID '{competition_id}'.", None
     
-def import_competitions_and_results(competition_file, results_file):
+    results = Result.query.filter_by(competition_id=competition.id).all()
+    
+    if not results:
+        return f"No results found for competition ID '{competition_id}'.", None
+    
+    participants_scores = []
+    for result in results:
+        participant = User.query.get(result.user_id)
+        if participant:
+            participants_scores.append((participant.username, result.score))
+    
+    return None, participants_scores
+
+
+def import_competitions(competition_file):
     try:
         # Import competitions
         with open(competition_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-            
                 competition_name = row['name']
                 competition_date_str = row['date']  # Date as string from CSV
                 try:
                     # Convert the string to a datetime object
-                    competition_date = datetime.strptime(competition_date_str, '%Y-%m-%d')
+                    competition_date = datetime.strptime(competition_date_str, '%Y-%m-%d').date()
                 except ValueError:
                     print(f"Error parsing date {competition_date_str} for competition {competition_name}")
                     continue
@@ -46,12 +59,20 @@ def import_competitions_and_results(competition_file, results_file):
                     competition = Competition(name=competition_name, date=competition_date)
                     db.session.add(competition)
                     db.session.commit()
+                    
+        print("Competitions imported successfully.")
+                
+    except FileNotFoundError as e:
+        print(f"File not found: {e.filename}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
+def import_results(results_file):
+    try:
         # Import results
         with open(results_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
-                
                 participant_name = row['participant_name']
                 score = row['score']
                 competition_id = row['competition_id']
@@ -61,13 +82,13 @@ def import_competitions_and_results(competition_file, results_file):
                     print(f"Competition with ID {competition_id} not found!")
                     continue
                 
-                participant = User.query.filter_by(username=participant_name).first()
+                participant = User.query.filter_by(username=participant_name).first()  # Assuming User model exists
                 if participant:
                     result = Result(user_id=participant.id, competition_id=competition.id, score=score)
                     db.session.add(result)
-
-        db.session.commit()
-        print("Competitions and results imported successfully.")
+                    db.session.commit()
+                    
+        print("Results imported successfully.")
 
     except FileNotFoundError as e:
         print(f"File not found: {e.filename}")

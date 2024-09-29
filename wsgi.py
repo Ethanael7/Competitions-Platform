@@ -4,7 +4,7 @@ from flask import Flask
 from flask.cli import with_appcontext, AppGroup
 
 from App.database import db, get_migrate
-from App.models import User, competition
+from App.models import User, Competition, Result, Participant
 from App.main import create_app
 from App.controllers import (
     create_user, 
@@ -13,8 +13,9 @@ from App.controllers import (
     initialize, 
     create_competition,   
     get_competition,
-    get_competition_results,
-    import_competitions_and_results
+    get_results,
+    import_competitions,
+    import_results
 )
 
 # This commands file allow you to create convenient CLI commands for testing controllers
@@ -50,28 +51,29 @@ def view_competitions_cli():
     else:
         click.echo("No competitions found")
 
-@app.cli.command("view-results")
-@click.argument("competition_id")
-def view_results_cli(competition_id):
-    results = get_competition_results(competition_id)
-    if results:
-        for result in results:
-            click.echo(f"Participant:{result.participant.name},Score: {result.score}")
-    else:
-        click.echo(f"No results found for competition with ID {competition_id}")
+@app.cli.command("view-results", help="View results for a specific competition by ID")
+@click.argument('competition_id')  
+def view_results(competition_id):
+   
+    error_message, results = get_results(competition_id)
+    
+    if error_message:
+        click.echo(error_message)
+        return
+    
+    click.echo(f"Results for Competition ID: {competition_id}")
+    for username, score in results:
+        click.echo(f"Participant: {username}, Score: {score}")
 
-@app.cli.command("import-competitions", help="Import competitions and results from CSV files")
-@click.argument('competition-file', default='competitions.csv')
-@click.argument('results_file', default='results.csv')
-def import_competitions(competition_file, results_file):
-    """CLI command to import competitions and results from specified CSV files."""
-    try:
-        import_competitions_and_results(competition_file, results_file)
-        print("Data import completed successfully.")
-    except Exception as e:
-        print(f"An error occurred during import: {e}")
+@app.cli.command("import-competitions", help="Import competitions CSV file")
+@click.argument('competition_file', default='competitions.csv')
+def import_competitions_cli(competition_file):
+    import_competitions(competition_file)
         
-
+@app.cli.command("import-results", help="Import results CSV file")
+@click.argument('results_file', default='results.csv')
+def import_results_cli(results_file):
+    import_results(results_file)
 
 
 # Commands can be organized using groups
@@ -99,7 +101,6 @@ def list_user_command(format):
         print(get_all_users_json())
 
 app.cli.add_command(user_cli) # add the group to the cli
-
 
 
 '''
