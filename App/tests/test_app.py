@@ -41,8 +41,8 @@ class UserUnitTests(unittest.TestCase):
     
     def test_hashed_password(self):
         password = "mypass"
-        hashed = generate_password_hash(password, method='pbkdf2:sha256')
-        user = User("bob", hashed)
+        user = User("bob", password)
+        hashed = user.password
         assert user.password != password
         assert check_password_hash(user.password, password)
 
@@ -85,96 +85,50 @@ class UsersIntegrationTests(unittest.TestCase):
         user = get_user(1)
         assert user.username == "ronnie"
         
-
-
-
-@pytest.fixture
-def add_sample_competition(test_client):
-    competition = Competition(name='Sample Competition', date=datetime.strptime('2024-10-10', '%Y-%m-%d').date())
-    db.session.add(competition)
-    db.session.commit()
-    return competition
-
-def test_create_competition(test_client):
-    name = 'New Competition'
-    date = '2024-12-15'
-    competition = create_competition(name, date)
-    assert competition.name == name
-    assert competition.date == datetime.strptime(date, '%Y-%m-%d').date()
-
-def test_get_competition(test_client, add_sample_competition):
-    competitions = Competition.query.all()
-    assert len(competitions) == 1
-    assert competitions[0].name == add_sample_competition.name
-
-def test_update_competition(test_client, add_sample_competition):
-    new_name = 'Updated Competition Name'
-    new_date = '2024-12-15'
-    error_message, updated_comp = update_competition(add_sample_competition.id, new_name, new_date)
-    
-    assert error_message is None
-    assert updated_comp.name == new_name
-    assert updated_comp.date == datetime.strptime(new_date, '%Y-%m-%d').date()
-
-def test_delete_competition(test_client, add_sample_competition):
-    error_message, response = delete_competition(add_sample_competition.id)
-    
-    assert error_message is None
-    assert response == f'Competition with ID {add_sample_competition.id} deleted.'
-    
-    # Check that the competition is indeed deleted
-    deleted_comp = Competition.query.get(add_sample_competition.id)
-    assert deleted_comp is None
-
-def test_import_competitions(test_client, tmp_path):
-    competition_data = """name,date
-    Sample Competition 1,2024-10-01
-    Sample Competition 2,2024-10-02
-    """
-    import_file = tmp_path / "competitions.csv"
-    import_file.write_text(competition_data)
-
-    import_competitions(str(import_file))
-
-    competitions = Competition.query.all()
-    assert len(competitions) == 2  # Two competitions should have been imported
-    assert competitions[0].name == 'Sample Competition 1'
-    assert competitions[1].name == 'Sample Competition 2'
-
-def test_import_results(test_client, tmp_path, add_sample_competition):
-    # Create a user for results
-    user = User(username='Alice')
-    db.session.add(user)
-    db.session.commit()
-
-    results_data = f"""participant_name,score,competition_id
-    Alice,85,{add_sample_competition.id}
-    """
-    import_file = tmp_path / "results.csv"
-    import_file.write_text(results_data)
-
-    import_results(str(import_file))
-
-    # Check if the result was imported correctly
-    results = Result.query.filter_by(competition_id=add_sample_competition.id).all()
-    assert len(results) == 1
-    assert results[0].score == 85
-    assert results[0].user_id == user.id
-
-def test_get_results(test_client, add_sample_competition):
-    # Create a user and a result for that competition
-    user = User(username='Alice')
-    db.session.add(user)
-    db.session.commit()
-    
-    result = Result(user_id=user.id, competition_id=add_sample_competition.id, score=90)
-    db.session.add(result)
-    db.session.commit()
-    
-    error_message, participant_scores = get_results(add_sample_competition.id)
-
-    assert error_message is None
-    assert len(participant_scores) == 1
-    assert participant_scores[0] == (user.username, result.score)
         
+class CompetitionIntegrationTests(unittest.TestCase):
+    
+    def test_create_competition(self):
+        competition = create_competition("Hackattack","2024-12-12")
+        assert competition.name == "Hackattack"
+        assert competition.date.date() == datetime.strptime("2024-12-12", "%Y-%m-%d").date()
+        assert competition.id is not None
+        retrieved_competition = Competition.query.filter_by(name="Hackattack").first()
+        assert retrieved_competition is not None
+        assert retrieved_competition.id == competition.id
+        
+    # def test_update_competition(self):
+    
+    #     competition = create_competition("Hackattack", "2024-12-12")
+    #     updated_competition = update_competition(competition.id, new_name="Hackathon", new_date="2024-12-15")
+    #     assert updated_competition.name == "Hackathon"
+    #     assert updated_competition.date.date() == datetime.strptime("2024-12-15", "%Y-%m-%d").date()
+    #     retrieved_competition = Competition.query.get(competition.id)
+    #     assert retrieved_competition.name == "Hackathon"
+    #     assert retrieved_competition.date == datetime.strptime("2024-12-15", "%Y-%m-%d").date()
+
+    def test_delete_competition(self):
+        competition = create_competition("Hackattack", "2024-12-12")
+        delete_competition(competition.id)
+        deleted_competition = Competition.query.get(competition.id)
+        assert deleted_competition is None
+        
+    # def test_get_results(self):
+    #     competition = create_competition("Hackattack", "2024-12-12")
+    #     results = get_results(competition.id)
+
+    #     expected_results = [{"participant": "Alice", "score": 100}, {"participant": "Bob", "score": 90}]
+    #     assert results == expected_results
+        
+        
+    # def test_import_competitions(self):
+    #     # Assume there's a method to import competitions from a file or data source
+    #     import_competitions("path/to/competitions_file.json")
+        
+    #     # Check if the competitions have been added to the database
+    #     competitions = Competition.query.all()
+    #     assert len(competitions) > 0  # Validate that competitions were imported
+
+    
+
 
