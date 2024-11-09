@@ -31,9 +31,20 @@ def update_user(id, username):
         return db.session.commit()
     return None
 
-def view_profile(id,username):
-    user = get_user(id)
-    if user:
-        user.username = username
+def register_user(username, password, is_moderator=False):
+    existing_user = User.query.filter_by(username=username).first()
+    if existing_user:
+        return None, "Username already taken"
+    
+    new_user = User(username=username, password=password, is_moderator=is_moderator)
+    db.session.add(new_user)
+    db.session.commit()
+    return new_user, None
+
+def get_user_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return None, "User not found"
+    return user, None
         
     

@@ -17,7 +17,6 @@ def create_competition(name, date):
 def get_competition():
     return Competition.query.all()
 
-
 def update_competition(competition_id, new_name, new_date):
     competition = Competition.query.get(competition_id)
     if not competition:
@@ -68,15 +67,14 @@ def import_competitions(competition_file):
             reader = csv.DictReader(csvfile)
             for row in reader:
                 competition_name = row['name']
-                competition_date_str = row['date']  # Date as string from CSV
+                competition_date_str = row['date']  
                 try:
-                    # Convert the string to a datetime object
+                  
                     competition_date = datetime.strptime(competition_date_str, '%Y-%m-%d').date()
                 except ValueError:
                     print(f"Error parsing date {competition_date_str} for competition {competition_name}")
                     continue
-                
-                # Create or fetch the competition
+            
                 competition = Competition.query.filter_by(name=competition_name).first()
                 if not competition:
                     competition = Competition(name=competition_name, date=competition_date)
@@ -92,7 +90,7 @@ def import_competitions(competition_file):
 
 def import_results(results_file):
     try:
-        # Import results
+   
         with open(results_file, newline='') as csvfile:
             reader = csv.DictReader(csvfile)
             for row in reader:
@@ -125,7 +123,49 @@ def import_results(results_file):
             return self.command.execute()
 
         
+def get_competition_details(competition_id):
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        return None, "Competition not found"
+    return competition, None
 
+def add_competition_result(competition_id, user_id, score):
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        return None, "Competition not found"
+
+    user = User.query.get(user_id)
+    if not user:
+        return None, "User not found"
+
+    result = Result(competition_id=competition_id, user_id=user_id, score=score)
+    db.session.add(result)
+    db.session.commit()
+    return result, None
+
+def get_competition_results(competition_id):
+    results = Result.query.filter_by(competition_id=competition_id).all()
+    if not results:
+        return None, "No results found"
+    
+    results_list = []
+    for result in results:
+        user = User.query.get(result.user_id)
+        results_list.append({"username": user.username, "score": result.score})
+    return results_list, None
+
+def get_leaderboard():
+    results = Result.query.order_by(Result.score.desc()).all()
+    leaderboard = []
+    for result in results:
+        user = User.query.get(result.user_id)
+        competition = Competition.query.get(result.competition_id)
+        leaderboard.append({
+            "username": user.username,
+            "competition_name": competition.name,
+            "score": result.score
+        })
+    return leaderboard, None
 
 
   
