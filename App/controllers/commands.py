@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from App.models import User, Competition
-from database import db
+from App.database import db
 from datetime import datetime
 import csv
 
