@@ -118,6 +118,13 @@ def import_results(results_file):
     except Exception as e:
         print(f"An error occurred: {e}")
         
+        def __init__(self,command):
+            self.command = command
+            
+        def execute(self):
+            return self.command.execute()
+
+        
 
 
 

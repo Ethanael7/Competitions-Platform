@@ -1,10 +1,11 @@
-from flask import Blueprint, render_template, jsonify, request, send_from_directory, flash, redirect, url_for
+from flask import Blueprint, render_template, abort, jsonify, request, send_from_directory, flash, redirect, url_for
 from App.controllers import(get_competition, update_competition, delete_competition, create_competition, import_competitions, import_results, get_results)
 from flask_jwt_extended import jwt_required, current_user as jwt_current_user
 from App.models import Competition, Result
 from werkzeug.utils import secure_filename
 from App.database import db
 from datetime import datetime
+from App.controllers import CompetitionController, CreateCompetitionCommand
 
 
 from.index import index_views
@@ -101,3 +102,34 @@ def get_all_results():
     } for result in results]
 
     return jsonify(results_data), 200
+
+
+
+
+@competition_views.route('/create_competition', methods=['POST'])
+def create_competition():
+    # Check if the current user is a moderator
+    current_user = jwt_current_user()  # Assume a function to get the logged-in user
+    if not current_user or not current_user.is_moderator:
+        abort(403, description="You do not have permission to create a competition")
+
+    # Get data from request
+    data = request.get_json()
+    name = data.get('name')
+    description = data.get('description')
+    date = data.get('date')
+    participants_amount = data.get('participants_amount')
+    duration = data.get('duration')
+
+    # Create the command object
+    command = CreateCompetitionCommand(name, description, date, participants_amount, duration)
+    
+    # Create the controller
+    controller = CompetitionController(command)
+    competition = controller.execute()
+
+    if isinstance(competition, str):  # If the result is an error message
+        return jsonify({"message": competition}), 400
+
+    # Return the competition details
+    return jsonify(competition.get_json()), 201
