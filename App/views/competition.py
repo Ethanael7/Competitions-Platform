@@ -1,11 +1,13 @@
 from flask import Blueprint, render_template, abort, jsonify, request, send_from_directory, flash, redirect, url_for
 from App.controllers import(get_competition, update_competition, delete_competition, create_competition, import_competitions, import_results, get_results)
-from flask_jwt_extended import jwt_required, current_user as jwt_current_user
-from App.models import Competition, Result
+from flask_jwt_extended import get_current_user, jwt_required, current_user as jwt_current_user
+from App.controllers.commands import ViewLeaderboardCommand, ViewProfileCommand
+from App.models import Competition, Result, CompetitionController
 from werkzeug.utils import secure_filename
 from App.database import db
 from datetime import datetime
-from App.controllers import CompetitionController, CreateCompetitionCommand
+from App.controllers.commands import CreateCompetitionsCommand
+from App.models.user import User, UserController
 
 
 from.index import index_views
@@ -19,7 +21,7 @@ def get_competitions():
     return jsonify([{
         'id': competition.id,
         'name': competition.name,
-        'date': competition.date.isoformat()  # Ensure dates are in ISO format
+        'date': competition.date.isoformat()  
     } for competition in competitions])
 
 @competition_views.route('/api/competitions/<int:competition_id>', methods=['GET'])
@@ -50,7 +52,6 @@ def upload_results_endpoint():
 def create_competition_endpoint():
     data = request.json
     
-    # Validate required fields
     if 'name' not in data or 'date' not in data:
         return jsonify({'message': 'Name and date are required.'}), 400
     
@@ -105,15 +106,14 @@ def get_all_results():
 
 
 
-
 @competition_views.route('/create_competition', methods=['POST'])
 def create_competition():
-    # Check if the current user is a moderator
-    current_user = jwt_current_user()  # Assume a function to get the logged-in user
+   
+    current_user = jwt_current_user()  
     if not current_user or not current_user.is_moderator:
         abort(403, description="You do not have permission to create a competition")
 
-    # Get data from request
+
     data = request.get_json()
     name = data.get('name')
     description = data.get('description')
@@ -121,15 +121,72 @@ def create_competition():
     participants_amount = data.get('participants_amount')
     duration = data.get('duration')
 
-    # Create the command object
-    command = CreateCompetitionCommand(name, description, date, participants_amount, duration)
+
+    command = CreateCompetitionsCommand(name, description, date, participants_amount, duration)
     
-    # Create the controller
+ 
     controller = CompetitionController(command)
     competition = controller.execute()
 
-    if isinstance(competition, str):  # If the result is an error message
+    if isinstance(competition, str):  
         return jsonify({"message": competition}), 400
 
-    # Return the competition details
+  
     return jsonify(competition.get_json()), 201
+
+
+@competition_views.route('/view_profile/<int:id>', methods=['GET'])
+def view_profile(id):
+    command = ViewProfileCommand(id)
+    controller = UserController(command)
+    user = controller.execute()
+
+    if user:
+        return jsonify(user.get_json())
+    return jsonify({"message": "User not found"}), 404
+
+
+@competition_views.route('/leaderboard', methods=['GET'])
+def view_leaderboard():
+    command = ViewLeaderboardCommand()
+    controller = UserController(command)
+    leaderboard = controller.execute()
+
+    return jsonify([user.get_json() for user in leaderboard]), 200
+
+@competition_views.route('/add_results',methods=['POST'])
+def add_results():
+    user = get_current_user()
+    if not user or not user.is_moderator:
+        return jsonify({"message": "Permission denied"}), 403
+
+    data = request.get_json()
+    competition_id = data.get('competition_id')
+    user_id = data.get('user_id')
+    score = data.get('score')
+
+    competition = Competition.query.get(competition_id)
+    if not competition:
+        return jsonify({"message": "Competition not found"}), 404
+
+    result = Result(competition_id=competition_id, user_id=user_id, score=score)
+    db.session.add(result)
+    db.session.commit()
+    return jsonify({"message": "Results added successfully!"}), 201
+
+
+@competition_views.route('/leaderboard', methods=['GET'])
+def leaderboard():
+
+    results = Result.query.order_by(Result.score.desc()).all()
+    leaderboard = []
+    for result in results:
+        user = User.query.get(result.user_id)
+        competition = Competition.query.get(result.competition_id)
+        leaderboard.append({
+            "username": user.username,
+            "competition_name": competition.name,
+            "score": result.score
+        })
+    return jsonify({"leaderboard": leaderboard}), 200
+        

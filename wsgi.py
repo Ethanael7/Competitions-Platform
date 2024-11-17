@@ -1,4 +1,4 @@
-import click, pytest, sys, csv
+import click, pytest, sys, csv,os
 from datetime import datetime
 from flask import Flask
 from flask.cli import with_appcontext, AppGroup
@@ -13,7 +13,6 @@ from App.controllers import (
     initialize, 
     create_competition,   
     get_competition,
-    get_results,
     import_competitions,
     import_results,
     update_competition,

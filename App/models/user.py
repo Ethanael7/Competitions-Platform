@@ -28,5 +28,21 @@ class User(db.Model):
         return check_password_hash(self.password, password)
     
 
+class UserController:
+    def __init__(self, command):
+        self.command = command
+
+    def execute(self):
+        return self.command.execute()
+
+
+class ModeratorController:
+    def __init__(self, command):
+        self.command = command
+
+    def execute(self):
+        return self.command.execute()
+    
+
   
 

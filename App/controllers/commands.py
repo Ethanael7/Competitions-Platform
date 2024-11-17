@@ -9,6 +9,30 @@ class Command(ABC):
     @abstractmethod
     def execute(self):
         pass
+    
+    
+class RegisterUserCommand(Command):
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+    def execute(self):
+        newuser = User(username=self.username, password=self.password)
+        db.session.add(newuser)
+        db.session.commit()
+        return newuser
+    
+    
+class LoginUserCommand(Command):
+    def __init__(self, username, password):
+        self.username = username
+        self.password = password
+
+    def execute(self):
+        user = User.query.filter_by(username=self.username).first()
+        if user and user.password == self.password:
+            return user
+        return None
 
 
 class CreateCompetitionsCommand(Command):
@@ -148,3 +172,38 @@ class ImportResultsCommand(Command):
             print(f"File not found: {e.filename}")
         except Exception as e:
             print(f"An error occurred: {e}")
+            
+class AddCompetitionResultsCommand(Command):
+    def __init__(self, competition_id, results):
+        self.competition_id = competition_id
+        self.results = results
+
+    def execute(self):
+        competition = Competition.query.get(self.competition_id)
+        if competition:
+            competition.results = self.results
+            db.session.commit()
+            return competition
+        return None
+
+
+class ViewProfileCommand(Command):
+    def __init__(self, user_id):
+        self.user_id = user_id
+
+    def execute(self):
+        return User.query.get(self.user_id)
+
+
+class ViewLeaderboardCommand(Command):
+    def __init__(self):
+        pass
+
+    def execute(self):
+        return User.query.order_by(User.rank.desc()).all()
+    
+
+
+                
+                
+                

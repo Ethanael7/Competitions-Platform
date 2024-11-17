@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, jsonify, request, send_from_directory, flash, redirect, url_for
 from flask_jwt_extended import jwt_required, current_user as jwt_current_user
 from sqlalchemy.exc import IntegrityError
+from App.database import db
 from.index import index_views
+from App.models import User
 
 from App.controllers import (
     create_user,
@@ -19,17 +21,17 @@ def get_user_page():
 
 @user_views.route('/users', methods=['POST'])
 def create_user_action():
-    data = request.json  # Change to request.json for JSON data
+    data = request.json  
     username = data.get('username')
     password = data.get('password')
 
-    # Check if username and password are provided
+ 
     if not username or not password:
         return jsonify({'error': 'Username and password are required!'}), 400
 
-    # Attempt to create a new user
+   
     try:
-        user = create_user(username, password)  # Assuming create_user is defined to handle user creation
+        user = create_user(username, password)  
     except IntegrityError:
         return jsonify({'error': 'Username already exists!'}), 409
     except Exception as e:
@@ -53,3 +55,30 @@ def create_user_endpoint():
 @user_views.route('/static/users', methods=['GET'])
 def static_user_page():
   return send_from_directory('static', 'static-user.html')
+
+
+@user_views.route('/register',methods=['POST'])
+def register():
+    data = request.get_json()
+    username = data.get('username')
+    password = data.get('password')
+    
+    existing_user = User.query.filer_by(username=username).first()
+    if existing_user:
+        return jsonify({"message": "Username already taken"}), 400
+    
+    new_user = User(username=username,password=password,is_moderator=False)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({"message": "User registered successfully!"}), 201
+
+# routes.py
+@user_views.route('/profile/<int:user_id>', methods=['GET'])
+def view_profile(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"message": "User not found"}), 404
+
+    return jsonify(user.get_json()), 200
+
+    

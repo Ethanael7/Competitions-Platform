@@ -47,3 +47,10 @@ class Result(db.Model):
                                
     def __repr__(self):
         return f'<Result {self.participant_name} - {self.score}>'
+    
+class CompetitionController:
+    def __init__(self, command):
+        self.command = command
+
+    def execute(self):
+        return self.command.execute()

@@ -41,6 +41,7 @@ def register_user(username, password, is_moderator=False):
     db.session.commit()
     return new_user, None
 
+
 def get_user_profile(user_id):
     user = User.query.get(user_id)
     if not user:
