@@ -88,40 +88,43 @@ class UsersIntegrationTests(unittest.TestCase):
         
 class CompetitionIntegrationTests(unittest.TestCase):
     
-    def test_create_competition(self):
-        competition = create_competition("Hackattack","2024-12-12")
-        assert competition.name == "Hackattack"
-        assert competition.date.date() == datetime.strptime("2024-12-12", "%Y-%m-%d").date()
-        assert competition.id is not None
-        retrieved_competition = Competition.query.filter_by(name="Hackattack").first()
-        assert retrieved_competition is not None
-        assert retrieved_competition.id == competition.id
-        
-    def test_update_competition(self):
-    
-        competition = create_competition("Hackattack", "2024-12-12")
-        updated_competition = update_competition(competition.id,"Hackathon", "2024-12-15")
-        
-    
-    def test_delete_competition(self):
-        competition = create_competition("Hackattack", "2024-12-12")
-        delete_competition(competition.id)
-        deleted_competition = Competition.query.get(competition.id)
-        assert deleted_competition is None
-        
-    def test_get_results(self):
-        competition = create_competition("Hackattack", "2024-12-12")
-        results = get_results(competition.id)
+   def test_create_competition():
+    competition = create_competition("Hackattack", "2024-12-12")
+    assert competition.name == "Hackattack"
+    assert competition.date.date() == datetime.strptime("2024-12-12", "%Y-%m-%d").date()
+    assert competition.id is not None
+    retrieved_competition = Competition.query.filter_by(name="Hackattack").first()
+    assert retrieved_competition is not None
+    assert retrieved_competition.id == competition.id
 
+def test_update_competition():
+    competition = create_competition("Hackattack", "2024-12-12")
+    updated_competition = update_competition(competition.id, "Hackathon", "2024-12-15")
+    assert updated_competition.name == "Hackathon"
+    assert updated_competition.date.date() == datetime.strptime("2024-12-15", "%Y-%m-%d").date()
+    retrieved_competition = Competition.query.get(competition.id)
+    assert retrieved_competition.name == "Hackathon"
+    assert retrieved_competition.date.date() == datetime.strptime("2024-12-15", "%Y-%m-%d").date()
+
+def test_delete_competition():
+    competition = create_competition("Hackattack", "2024-12-12")
+    delete_competition(competition.id)
+    deleted_competition = Competition.query.get(competition.id)
+    assert deleted_competition is None
         
+def test_get_results(self):
+    competition = create_competition("Hackattack", "2024-12-12")
+    results = get_results(competition.id)
+
+         
         
-        
-    def test_import_competitions(self):
-    
-        import_competitions("path/to/competitions_file.json")
-        
-        competitions = Competition.query.all()
-        assert len(competitions) > 0  
+def test_import_competitions():
+    import_competitions("path/to/competitions_file.json")
+    competitions = Competition.query.all()
+    assert len(competitions) > 0
+    competition_names = [comp.name for comp in competitions]
+    assert "Hackattack" in competition_names
+    assert "AnotherCompetition" in competition_names
 
     
 
