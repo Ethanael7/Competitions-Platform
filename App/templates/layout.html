@@ -14,7 +14,7 @@
   </head>
   <body>
     
-      <nav class="purple">
+      <nav class="blue">
           <div class="nav-wrapper">
               <a href="#!" class="brand-logo center">{% block page %}{% endblock %}</a>
               <ul id="nav-mobile" class="left">
@@ -56,15 +56,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>
        M.AutoInit();
-
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-              {% for message in messages %}
-              M.toast({html: '{{message}}'})
-              {% endfor %}
-          {% endif %}
-        {% endwith %}
        
+
+       const messages = JSON.parse(document.getElementById('flash-messages').textContent);
+       if (messages.length) {
+          messages.forEach(function(message) {
+          M.toast({ html: message });
+        });
+      }
+
     </script>
   </body>
 </html>
